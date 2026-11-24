@@ -1,0 +1,1434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="SOULSPACE: an all-emotion AI companion with a living Emotion Spectrum Orb and live mood music.">
+<title>SOULSPACE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Hind+Siliguri:wght@400;500;600&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+
+/* Layout: orb stage on the left (sticky on desktop), conversation on the right; stacked on phones.
+   A single committed dark look so the orb's light is the only strong colour on the page. */
+:root{
+  --ink:#0b0d18; --ink-2:#12152a; --ink-3:#1b1f3a; --line:#2a2f52;
+  --fg:#ecebf6; --mute:#a0a2c6; --accent:#8b7cff; --on-accent:#0b0d18;
+  --danger:#ff8a8a;
+  --glow:139,124,255;
+  --font-display:"Bricolage Grotesque","Hind Siliguri",system-ui,sans-serif;
+  --font-body:"Hind Siliguri","Noto Sans Bengali",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ink); color:var(--fg);
+  font:16px/1.55 var(--font-body);
+  position:relative; min-height:100vh; overflow-x:hidden;
+  padding-block:22px 30px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(55% 45% at 28% 32%, rgba(var(--glow),.17), transparent 70%),
+    radial-gradient(40% 40% at 82% 92%, rgba(var(--glow),.07), transparent 70%);
+}
+button,select,textarea,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.shell{max-width:1180px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:28px;height:28px;border-radius:50%;flex:none;
+  background:conic-gradient(#ffb84d,#ff6fa5,#d6336c,#a78bfa,#4f7cff,#3cd6ff,#2ecf9a,#ffb84d);
+  box-shadow:0 0 18px rgba(var(--glow),.55)}
+.brand h1{font:700 1.3rem/1 var(--font-display);letter-spacing:.2em;margin:0}
+.brand p{margin:4px 0 0;color:var(--mute);font-size:.84rem}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:transparent;border-radius:99px;padding:6px 14px;font-size:.86rem;color:var(--fg)}
+.pill:hover{border-color:var(--mute)}
+.pill[aria-pressed="true"]{border-color:#d6336c;background:rgba(214,51,108,.16)}
+
+.gate{background:var(--ink-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:18px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.gate p{margin:0;max-width:62ch;color:var(--fg)}
+.gate .row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--ink-3);border-radius:10px;padding:8px 14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+
+.app{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:30px;align-items:start}
+.stage{display:flex;flex-direction:column;gap:16px;min-width:0}
+.orbwrap{width:100%;max-width:440px;margin:0 auto}
+#orb{display:block;width:100%;aspect-ratio:1;max-width:100%}
+.reading{text-align:center;min-height:4.4em}
+.reading h2{font:500 1.6rem/1.15 var(--font-display);margin:0;text-wrap:balance;overflow-wrap:anywhere}
+.reading p{margin:6px 0 0;color:var(--mute);font-size:.92rem;overflow-wrap:anywhere}
+
+.spectrum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.chipc{position:relative;overflow:hidden;display:flex;align-items:center;gap:8px;text-align:left;
+  border:1px solid var(--line);background:transparent;border-radius:12px;padding:9px 10px;font-size:.88rem;min-width:0}
+.chipc .dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none;box-shadow:0 0 8px var(--c)}
+.chipc span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chipc::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:calc(var(--w,0) * 1%);background:var(--c);transition:width .8s ease}
+.chipc[aria-pressed="true"]{border-color:var(--c)}
+.chipc:hover{border-color:var(--mute)}
+
+.music{background:var(--ink-2);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.m-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.m-label{font:600 .72rem var(--font-display);letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+#mTrack{font-size:.9rem;overflow-wrap:anywhere}
+.m-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--ink-3);display:grid;place-items:center;flex:none}
+.icon-btn.main{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.icon-btn:disabled{opacity:.4;cursor:not-allowed}
+.vol{flex:1;min-width:110px;display:flex;align-items:center}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.follow{display:flex;gap:8px;align-items:center;font-size:.9rem}
+select{background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:7px 10px;min-width:0;max-width:100%;font-size:.88rem}
+.file-btn{border:1px dashed var(--line);border-radius:10px;padding:6px 12px;font-size:.86rem;color:var(--mute);cursor:pointer}
+.file-btn:hover{border-color:var(--mute);color:var(--fg)}
+.m-note{font-size:.8rem;color:var(--mute);margin:0}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:8px 10px;font-size:.88rem;color:var(--mute)}
+.seg button[aria-pressed="true"]{background:var(--ink-3);color:var(--fg);font-weight:600}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.plist li{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:4px 6px;min-width:0}
+.plist li.cur{border-color:var(--accent)}
+.pname{flex:1;min-width:0;background:none;border:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 6px}
+.plist select{max-width:42%;font-size:.78rem;padding:4px 6px}
+.plist .rm{background:none;border:0;color:var(--mute);padding:2px 8px;font-size:1.1rem;line-height:1}
+.free summary{cursor:pointer;font-size:.88rem;color:var(--mute)}
+.free p{margin:8px 0 0;font-size:.82rem;color:var(--mute)}
+.free ul{margin:8px 0 0;padding-left:1.1em;font-size:.84rem;color:var(--mute);display:flex;flex-direction:column;gap:4px}
+.free a{color:var(--fg)}
+.langs{display:flex;flex-wrap:wrap;gap:6px}
+.langs button{border:1px solid var(--line);background:transparent;border-radius:99px;padding:4px 12px;font-size:.84rem}
+.langs button[aria-pressed="true"]{border-color:var(--accent);background:rgba(139,124,255,.18)}
+.ytgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ytlink{display:flex;gap:8px;align-items:center;min-width:0;border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--fg);text-decoration:none;font-size:.86rem}
+.ytlink .dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none;box-shadow:0 0 8px var(--c)}
+.ytlink span{min-width:0;overflow-wrap:anywhere}
+.ytlink:hover{border-color:var(--mute)}
+.ytlink[data-now="1"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
+.ytform{display:flex;flex-direction:column;gap:8px}
+.ytform input{background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;width:100%;font-size:.9rem}
+.ytform input::placeholder{color:var(--mute)}
+a.pname{color:var(--fg);text-decoration:none;display:block}
+.chat{background:var(--ink-2);border:1px solid var(--line);border-radius:20px;display:flex;flex-direction:column;height:min(80vh,780px);min-height:520px;min-width:0;overflow:hidden}
+.log{flex:1;overflow-y:auto;padding:18px 18px 8px;display:flex;flex-direction:column;gap:18px}
+.msg{min-width:0}
+.msg.user{align-self:flex-end;max-width:86%}
+.bubble{background:var(--ink-3);border-radius:16px 16px 4px 16px;padding:10px 14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.ai{max-width:95%}
+.who{font:600 .68rem var(--font-display);letter-spacing:.18em;color:var(--mute);margin-bottom:4px}
+.body{white-space:pre-wrap;overflow-wrap:anywhere}
+.body.err{color:var(--mute);font-style:italic}
+.body.typing::after{content:"";display:inline-block;width:.55em;height:.55em;border-radius:50%;background:var(--mute);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tags:empty{display:none}
+.tag{font-size:.76rem;padding:2px 10px;border-radius:99px;
+  border:1px solid color-mix(in srgb,var(--c) 60%,transparent);
+  background:color-mix(in srgb,var(--c) 15%,transparent)}
+.fix{margin-top:6px}
+.fix .link{background:none;border:0;padding:0;color:var(--mute);font-size:.8rem;text-decoration:underline;text-underline-offset:3px}
+.fix .link:hover{color:var(--fg)}
+.fixpanel{margin-top:8px;border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.fixpanel p{margin:0;font-size:.86rem;color:var(--mute)}
+.fixgrid{display:flex;flex-wrap:wrap;gap:6px}
+.fixgrid button{border:1px solid var(--line);background:transparent;border-radius:99px;padding:3px 12px;font-size:.82rem}
+.fixgrid button[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 22%,transparent)}
+.sys{font-size:.82rem;color:var(--mute);text-align:center}
+.care{border:1px solid rgba(255,138,138,.45);background:rgba(255,138,138,.08);border-radius:14px;padding:12px 14px}
+.care strong{display:block;margin-bottom:4px;font-weight:600}
+.care p{margin:0;overflow-wrap:anywhere}
+.suggest{display:flex;flex-wrap:wrap;gap:8px}
+.suggest button{border:1px solid var(--line);background:transparent;border-radius:14px;padding:7px 12px;font-size:.88rem;text-align:left;min-width:0;overflow-wrap:anywhere}
+.suggest button:hover{border-color:var(--accent)}
+.inline-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+
+.composer{display:flex;gap:10px;padding:12px;border-top:1px solid var(--line);align-items:flex-end}
+.composer textarea{flex:1;min-width:0;resize:none;background:var(--ink);border:1px solid var(--line);border-radius:14px;padding:10px 12px;max-height:140px;line-height:1.45}
+.composer textarea::placeholder{color:var(--mute)}
+.send{border:0;background:var(--accent);color:var(--on-accent);font-weight:600;border-radius:12px;padding:10px 18px;flex:none}
+.send.stop{background:transparent;color:var(--fg);border:1px solid var(--line)}
+
+.foot{margin-top:26px;color:var(--mute);font-size:.82rem;max-width:90ch}
+.foot p{margin:0 0 6px}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr);gap:22px}
+  .stage{position:static}
+  .orbwrap{max-width:300px}
+  .chat{height:78vh;min-height:480px}
+}
+@media (max-width:420px){
+  .ytgrid{grid-template-columns:minmax(0,1fr)}
+  .spectrum{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .reading h2{font-size:1.35rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <h1>SOULSPACE</h1>
+        <p lang="bn">সব অনুভূতির জন্য একটা জায়গা</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="pill" id="intimacyBtn" aria-pressed="false">Intimacy mode · 18+</button>
+      <button class="pill" id="clearBtn">Clear conversation</button>
+    </div>
+  </header>
+
+  <div class="gate" id="ageGate" hidden>
+    <p>Intimacy mode opens respectful, non-judgmental conversation about desire, attraction and intimacy. It stays non-explicit. Confirm you are 18 or older to turn it on.</p>
+    <div class="row">
+      <button class="btn primary" id="ageYes">I'm 18 or older</button>
+      <button class="btn" id="ageNo">Not now</button>
+    </div>
+  </div>
+
+  <main class="app">
+    <section class="stage" aria-label="Emotion Spectrum Orb and mood music">
+      <div class="orbwrap">
+        <canvas id="orb" role="img" aria-label="Emotion Spectrum Orb. Open spectrum, waiting for you."></canvas>
+      </div>
+      <div class="reading" aria-live="polite">
+        <h2 id="readTitle">Open spectrum</h2>
+        <p id="readSub">Tell me what you feel, in any words, in any language.</p>
+      </div>
+      <div class="spectrum" id="spectrum" role="group" aria-label="Tune the orb by hand: tap feelings to blend them"></div>
+
+      <div class="music" id="music">
+        <div class="m-head">
+          <span class="m-label">Mood music</span>
+          <span id="mTrack">Silent. Press play.</span>
+        </div>
+        <div class="seg" role="group" aria-label="Music source">
+          <button type="button" id="srcMood" aria-pressed="true">Mood music</button>
+          <button type="button" id="srcSongs" aria-pressed="false">My songs</button>
+        </div>
+        <div class="m-row">
+          <button class="icon-btn main" id="mPlay" aria-label="Play music"></button>
+          <button class="icon-btn" id="mSkip" aria-label="Skip to another variation"></button>
+          <label class="vol"><span class="sr">Volume</span><input type="range" id="mVol" min="0" max="100" value="55"></label>
+        </div>
+        <div class="m-row">
+          <label class="follow"><input type="checkbox" id="mFollow" checked> Follow my feelings</label>
+        </div>
+        <div class="m-row">
+          <label class="sr" for="mMode">Music mood</label>
+          <select id="mMode"></select>
+          <label class="sr" for="mWorld">Sound world</label>
+          <select id="mWorld"></select>
+        </div>
+        <ol class="plist" id="plist" hidden></ol>
+        <div class="m-row">
+          <label class="file-btn" for="mFile">Add your songs</label>
+          <input type="file" id="mFile" accept="audio/*" multiple hidden>
+        </div>
+        <details class="free">
+          <summary>Find free songs from around the world</summary>
+          <p>Download a song, then add it above. For tracks you did not make, check the license first: public domain and CC0 are the safest, CC BY needs a credit.</p>
+          <ul>
+            <li><a href="https://freemusicarchive.org/" target="_blank" rel="noopener">Free Music Archive</a>: free downloads in many genres, each with its own license.</li>
+            <li><a href="https://archive.org/details/audio" target="_blank" rel="noopener">Internet Archive Audio</a>: public domain and Creative Commons recordings, including folk and traditional music.</li>
+            <li><a href="https://musopen.org/" target="_blank" rel="noopener">Musopen</a>: public domain classical recordings.</li>
+            <li><a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a>: freely licensed audio, including traditional music from many countries.</li>
+          </ul>
+        </details>
+        <p class="m-note">Mood music and world styles are composed live in your browser. Your own songs stay on your device and are gone when you close this page.</p>
+      </div>
+
+      <div class="music yt" id="yt">
+        <div class="m-head">
+          <span class="m-label">Songs on YouTube</span>
+          <span class="m-note">Opens in a new tab</span>
+        </div>
+        <div class="langs" id="ytLangs" role="group" aria-label="Song language"></div>
+        <div class="ytgrid" id="ytGrid"></div>
+        <p class="m-note">The type that matches your current feeling is highlighted. Songs play on YouTube, so the orb cannot follow them. For that, add the file under My songs.</p>
+        <form class="ytform" id="ytForm" autocomplete="off">
+          <label class="sr" for="ytUrl">YouTube link</label>
+          <input id="ytUrl" type="text" inputmode="url" placeholder="Paste a YouTube link to keep it here">
+          <label class="sr" for="ytTitle">Song name</label>
+          <input id="ytTitle" type="text" placeholder="Song name (optional)">
+          <div class="m-row">
+            <label class="sr" for="ytTag">Feeling</label>
+            <select id="ytTag"></select>
+            <button class="btn" type="submit">Save link</button>
+          </div>
+          <p class="m-note" id="ytMsg" role="status"></p>
+        </form>
+        <ol class="plist" id="ytList" hidden></ol>
+      </div>
+    </section>
+
+    <section class="chat" aria-label="Conversation">
+      <div class="log" id="log" role="log" aria-live="polite"></div>
+      <form class="composer" id="form" autocomplete="off">
+        <label class="sr" for="input">Your message</label>
+        <textarea id="input" rows="1" placeholder="What are you feeling right now? Write in Bengali or English."></textarea>
+        <button class="send" id="send" type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>SOULSPACE reflects feelings back to you. It is not a doctor or therapist, and its reading of your emotions is a guess you can correct, never a diagnosis.</p>
+    <p>Your messages are sent to Claude to write each reply. This page does not save them, and "Clear conversation" removes them from view.</p>
+    <p id="aiNote" hidden></p>
+  </footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.min(b,Math.max(a,v));
+const TAU = Math.PI*2;
+const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const rgbStr = c => 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+
+/* ---------- the nine emotion families ---------- */
+const CATS = [
+  {id:'happiness', name:'Happiness', sub:'Joy, excitement, gratitude, hope, pride', rgb:[255,184,77],  speed:1.1,  wob:.5,  spark:.9},
+  {id:'sadness',   name:'Sadness',   sub:'Loneliness, grief, disappointment, nostalgia', rgb:[79,124,255], speed:.45, wob:.25, spark:.05},
+  {id:'anger',     name:'Anger',     sub:'Frustration, irritation, jealousy, resentment', rgb:[255,77,77], speed:1.7, wob:1,   spark:.8},
+  {id:'love',      name:'Love',      sub:'Romance, attraction, attachment, heartbreak', rgb:[255,111,165], speed:.7, wob:.4, spark:.3},
+  {id:'lust',      name:'Lust',      sub:'Desire, fantasy, intimacy', rgb:[214,51,108], speed:.55, wob:.55, spark:.15},
+  {id:'fear',      name:'Fear',      sub:'Anxiety, insecurity, panic, uncertainty', rgb:[116,101,200], speed:1.2, wob:.9, spark:.1},
+  {id:'confidence',name:'Confidence',sub:'Motivation, ambition, self-esteem, courage', rgb:[46,207,154], speed:.95, wob:.35, spark:.5},
+  {id:'curiosity', name:'Curiosity', sub:'Wonder, exploration, creativity, discovery', rgb:[60,214,255], speed:.9, wob:.6, spark:.6},
+  {id:'complex',   name:'Complex',   sub:'Guilt, shame, envy, regret, ambivalence', rgb:[167,139,250], speed:.8, wob:.8, spark:.25}
+];
+const CAT = {};
+CATS.forEach(c => { CAT[c.id] = c; });
+
+/* ---------- state ---------- */
+const S = {
+  items: [],            // [{cat,label,intensity}] strongest first
+  adult: false,
+  turns: [],            // conversation kept by the page
+  pendingNote: '',
+  busy: false,
+  ctl: null,
+  replyOff: false,
+  musicOverride: null,
+  source: 'mood',       // 'mood' or 'songs'
+  playlist: [],         // [{id,file,name,tag}]
+  cur: -1,
+  links: []            // saved YouTube links [{url,title,tag}]
+};
+const tw = {}, cw = {};
+CATS.forEach(c => { tw[c.id] = 1/CATS.length; cw[c.id] = 1/CATS.length; });
+let tIntensity = .3, ci = .3;
+
+/* =====================================================
+   MUSIC ENGINE: composed live with Web Audio, so there
+   is no copyrighted audio to license.
+   ===================================================== */
+const QI = {maj:[0,4,7], min:[0,3,7], maj7:[0,4,7,11], min7:[0,3,7,10], min9:[0,3,7,10,14],
+            sus:[0,5,7], sus2:[0,2,7], dim:[0,3,6], fifth:[0,7]};
+const TRANS = [0,2,-2,5,-5,7,-3,3];
+const MODES = {
+  happiness:{title:'Sunlit Steps', cat:'Happiness', root:60, scale:[0,2,4,7,9], step:.22, wave:'triangle', partials:[[1,1],[2,.25]], lp:5200, dens:.78, oct:[0,0,12], dur:.9, gain:.15, prog:[{r:0,q:'maj'},{r:7,q:'maj'},{r:9,q:'min'},{r:5,q:'maj'}], chordDur:3.5, padWave:'sine', padGain:.05, hat:1},
+  sadness:{title:'Quiet Piano', cat:'Sadness', root:57, scale:[0,2,3,5,7,8,10], step:.95, wave:'sine', partials:[[1,1],[2,.4],[3,.15]], lp:3200, dens:.5, oct:[0,0,12], dur:3.2, gain:.2, prog:[{r:0,q:'min'},{r:8,q:'maj'},{r:3,q:'maj'},{r:10,q:'maj'}], chordDur:7.6, padWave:'sine', padGain:.035, bias:-1},
+  anger:{title:'Ember Pulse', cat:'Anger', root:38, scale:[0,1,3,5,7,8,10], step:.16, wave:'sawtooth', partials:[[1,1]], lp:1500, dens:.42, oct:[12,12,24], dur:.35, gain:.09, prog:[{r:0,q:'min'},{r:1,q:'maj'},{r:0,q:'min'},{r:8,q:'maj'}], chordDur:2.56, padWave:'sawtooth', padGain:.03, padLp:700, kick:4, hat:2, bass:true},
+  love:{title:'Slow Roses', cat:'Love', root:55, scale:[0,2,4,5,7,9,11], step:.5, wave:'triangle', partials:[[1,1],[2,.3]], lp:3600, dens:.55, oct:[0,12,12], dur:1.8, gain:.15, prog:[{r:0,q:'maj7'},{r:9,q:'min7'},{r:5,q:'maj7'},{r:7,q:'sus'}], chordDur:4, padWave:'sine', padGain:.045},
+  lust:{title:'Velvet Hours', cat:'Lust', root:50, scale:[0,3,5,7,10,14], step:1.1, wave:'sine', partials:[[1,1],[2,.35]], lp:1700, dens:.35, oct:[0,12], dur:3, gain:.16, prog:[{r:0,q:'min9'},{r:5,q:'min9'},{r:3,q:'maj7'},{r:7,q:'min7'}], chordDur:8.8, padWave:'triangle', padGain:.04, padLp:1200, pulse:true},
+  fear:{title:'Hollow Corridor', cat:'Fear', root:36, scale:[0,1,3,6,7,10], step:1.4, wave:'sine', partials:[[1,1],[1.5,.2]], lp:2200, dens:.28, oct:[12,24,24], dur:3.5, gain:.09, prog:[{r:0,q:'dim'},{r:1,q:'sus2'},{r:6,q:'dim'}], chordDur:9, padWave:'sawtooth', padGain:.02, padLp:500, swell:.6},
+  confidence:{title:'Rising Ground', cat:'Confidence', root:52, scale:[0,2,4,7,9], step:.25, wave:'sawtooth', partials:[[1,1]], lp:2600, dens:.6, oct:[0,12,12], dur:.5, gain:.09, prog:[{r:0,q:'maj'},{r:7,q:'maj'},{r:9,q:'min'},{r:5,q:'maj'}], chordDur:4, padWave:'sawtooth', padGain:.03, padLp:1400, kick:2, hat:1, bass:true},
+  curiosity:{title:'Glass Garden', cat:'Curiosity', root:62, scale:[0,2,4,6,7,9,11], step:.36, wave:'sine', partials:[[1,1],[3,.25],[5.04,.1]], lp:7000, dens:.6, oct:[0,12,24], dur:1.6, gain:.12, prog:[{r:0,q:'sus2'},{r:2,q:'maj'},{r:7,q:'sus2'},{r:9,q:'min'}], chordDur:5.76, padWave:'sine', padGain:.035},
+  complex:{title:'Two Rooms', cat:'Complex', root:53, scale:[0,2,3,5,7,8,10], step:.7, wave:'triangle', partials:[[1,1],[2,.3]], lp:2800, dens:.42, oct:[0,12], dur:2, gain:.14, prog:[{r:0,q:'maj7'},{r:0,q:'min7'},{r:5,q:'sus'},{r:3,q:'maj'}], chordDur:5.6, padWave:'sine', padGain:.04},
+  dreamy:{title:'Faded Polaroid', cat:'Nostalgia', root:60, scale:[0,2,4,7,9,11], step:.62, wave:'sine', partials:[[1,1],[2,.3],[4,.1]], lp:2600, dens:.5, oct:[0,12], dur:2.6, gain:.14, prog:[{r:0,q:'maj7'},{r:5,q:'maj7'},{r:9,q:'min7'},{r:7,q:'sus2'}], chordDur:7.4, padWave:'triangle', padGain:.05, padLp:1800, wide:true},
+  minimal:{title:'Open Space', cat:'Deep thinking', root:48, scale:[0,2,7,9], step:1.7, wave:'sine', partials:[[1,1]], lp:2000, dens:.22, oct:[0,12,24], dur:4.5, gain:.12, prog:[{r:0,q:'fifth'},{r:7,q:'fifth'}], chordDur:12, padWave:'sine', padGain:.045}
+};
+
+/* World styles: each one swaps the scale and the instrument, while the feeling still sets tempo, density and energy.
+   "bright" feelings get the brighter scale, the others get the darker one. */
+const BRIGHT = new Set(['happiness','love','confidence','curiosity','dreamy']);
+const DRONE = [{r:0,q:'fifth'}];
+const WORLDS = {
+  ambient:{label:'Ambient (default)'},
+  southasia:{label:'South Asian · raga style', durK:.55,
+    base:{wave:'sawtooth', partials:[[1,1],[2,.3],[3,.15]], lp:3400, padWave:'sawtooth', padGain:.03, padLp:900, prog:DRONE, chordDur:9, kick:0, hat:0, bass:false, pulse:false, wide:true},
+    bright:{scale:[0,2,4,6,7,9,11]}, dark:{scale:[0,1,3,5,7,8,10]}},
+  eastasia:{label:'East Asian · koto and bamboo', durK:.6,
+    base:{wave:'triangle', partials:[[1,1],[2,.45],[3,.2]], lp:5200, padWave:'sine', padGain:.03, padLp:1400, prog:DRONE, chordDur:10, kick:0, hat:0, bass:false, pulse:false},
+    bright:{scale:[0,2,4,7,9]}, dark:{scale:[0,2,3,7,8]}},
+  middleeast:{label:'Middle Eastern · oud and maqam', durK:.5,
+    base:{wave:'triangle', partials:[[1,1],[2,.6],[3,.3]], lp:3800, padWave:'sawtooth', padGain:.025, padLp:800, prog:DRONE, chordDur:9, kick:0, hat:0, bass:false, pulse:false},
+    bright:{scale:[0,2,4,5,7,9,10]}, dark:{scale:[0,1,4,5,7,8,10]}},
+  spanish:{label:'Spanish · flamenco guitar', durK:.45,
+    base:{wave:'sawtooth', partials:[[1,1],[2,.4]], lp:2600, padWave:'triangle', padGain:.03, padLp:1200, kick:0, hat:0, bass:false, pulse:false},
+    bright:{scale:[0,2,4,5,7,9,11], prog:[{r:0,q:'maj'},{r:5,q:'maj'},{r:7,q:'maj'},{r:0,q:'maj'}], chordDur:3.2},
+    dark:{scale:[0,1,4,5,7,8,10], prog:[{r:0,q:'min'},{r:10,q:'maj'},{r:8,q:'maj'},{r:7,q:'maj'}], chordDur:3.2}},
+  westafrica:{label:'West African · kalimba', durK:.5,
+    base:{wave:'sine', partials:[[1,1],[6,.12]], lp:6500, padWave:'sine', padGain:.025, padLp:1500, prog:DRONE, chordDur:8, kick:0, hat:0, bass:false, pulse:false},
+    bright:{scale:[0,2,4,7,9]}, dark:{scale:[0,3,5,7,10]}},
+  celtic:{label:'Celtic · harp and drone', durK:.8,
+    base:{wave:'triangle', partials:[[1,1],[2,.3]], lp:4200, padWave:'sine', padGain:.035, padLp:1600, prog:DRONE, chordDur:9, kick:0, hat:0, bass:false, pulse:false},
+    bright:{scale:[0,2,4,5,7,9,10]}, dark:{scale:[0,2,3,5,7,9,10]}},
+  gamelan:{label:'Indonesian · gamelan bells', durK:1,
+    base:{wave:'sine', partials:[[1,1],[2.76,.5],[5.4,.25]], lp:7000, padWave:'sine', padGain:.025, padLp:1200, prog:DRONE, chordDur:10, kick:0, hat:0, bass:false, pulse:false},
+    bright:{scale:[0,2,5,7,9]}, dark:{scale:[0,1,3,7,8]}},
+  latin:{label:'Latin · nylon guitar and groove', durK:.6,
+    base:{wave:'triangle', partials:[[1,1],[2,.35]], lp:4200, padWave:'sine', padGain:.035, padLp:1600, kick:4, hat:1, bass:true, pulse:false},
+    bright:{scale:[0,2,4,7,9,11], prog:[{r:0,q:'maj7'},{r:2,q:'min7'},{r:7,q:'sus'},{r:0,q:'maj7'}], chordDur:4},
+    dark:{scale:[0,2,3,5,7,8,10], prog:[{r:0,q:'min7'},{r:5,q:'min7'},{r:7,q:'sus'},{r:0,q:'min7'}], chordDur:4}}
+};
+
+const Music = (function(){
+  let ac = null, master, bus, dry, comp, analyser, noiseBuf, userGain, freqData;
+  const st = {on:false, mode:'minimal', world:'ambient', step:0, nextT:0, nextChordT:0, chordIdx:0, curChord:null,
+              variant:0, intensity:.35, vol:.55, timer:null, phrase:[], own:null, ownName:'', tok:0};
+
+  const mtof = m => 440 * Math.pow(2,(m-69)/12);
+  const volGain = () => Math.pow(st.vol,2) * 1.1;
+
+  function effective(){
+    const m = MODES[st.mode], w = WORLDS[st.world];
+    if(!w || !w.base) return m;
+    return Object.assign({}, m, w.base, BRIGHT.has(st.mode) ? w.bright : w.dark, {dur: clamp(m.step*3,.4,3)*(w.durK || 1)});
+  }
+
+  function ensure(){
+    if(ac) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return false;
+    ac = new AC();
+    comp = ac.createDynamicsCompressor();
+    master = ac.createGain(); master.gain.value = 0;
+    analyser = ac.createAnalyser(); analyser.fftSize = 256;
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+    comp.connect(master); comp.connect(analyser); master.connect(ac.destination);
+    dry = ac.createGain(); dry.gain.value = .85; dry.connect(comp);
+    const conv = ac.createConvolver();
+    const len = Math.floor(ac.sampleRate*3.2), ib = ac.createBuffer(2,len,ac.sampleRate);
+    for(let c=0;c<2;c++){ const d = ib.getChannelData(c); for(let i=0;i<len;i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/len,2.2); }
+    conv.buffer = ib;
+    const wet = ac.createGain(); wet.gain.value = .5; conv.connect(wet); wet.connect(comp);
+    const dl = ac.createDelay(1.5); dl.delayTime.value = .43;
+    const fb = ac.createGain(); fb.gain.value = .3; dl.connect(fb); fb.connect(dl);
+    const dOut = ac.createGain(); dOut.gain.value = .22; dl.connect(dOut); dOut.connect(comp);
+    bus = ac.createGain(); bus.connect(dry); bus.connect(conv); bus.connect(dl);
+    userGain = ac.createGain(); userGain.gain.value = 1; userGain.connect(comp);
+    const nl = ac.sampleRate*2; noiseBuf = ac.createBuffer(1,nl,ac.sampleRate);
+    const nd = noiseBuf.getChannelData(0); for(let i=0;i<nl;i++) nd[i] = Math.random()*2-1;
+    return true;
+  }
+
+  function voice(t,f,o){
+    const g = ac.createGain(), lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = o.lp; lp.Q.value = .5;
+    const a = o.attack || .012;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(o.gain,t+a);
+    g.gain.exponentialRampToValueAtTime(.0001,t+o.dur);
+    lp.connect(g); g.connect(bus);
+    o.partials.forEach(p => {
+      const os = ac.createOscillator(), pg = ac.createGain();
+      os.type = o.wave; os.frequency.value = f*p[0]; pg.gain.value = p[1];
+      os.connect(pg); pg.connect(lp); os.start(t); os.stop(t+o.dur+.05);
+    });
+  }
+  function padVoice(t,f,o){
+    const g = ac.createGain(), lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = o.lp; lp.Q.value = .4;
+    const att = Math.min(2.6,o.dur*.35), rel = 2.6;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(o.gain,t+att);
+    g.gain.linearRampToValueAtTime(o.gain,t+o.dur);
+    g.gain.linearRampToValueAtTime(0,t+o.dur+rel);
+    lp.connect(g); g.connect(bus);
+    [-1,1].forEach(s => {
+      const os = ac.createOscillator();
+      os.type = o.wave; os.frequency.value = f; os.detune.value = s*o.det;
+      os.connect(lp); os.start(t); os.stop(t+o.dur+rel+.05);
+    });
+  }
+  function kick(t,g){
+    const o = ac.createOscillator(), e = ac.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(130,t); o.frequency.exponentialRampToValueAtTime(42,t+.12);
+    e.gain.setValueAtTime(g,t); e.gain.exponentialRampToValueAtTime(.001,t+.24);
+    o.connect(e); e.connect(dry); o.start(t); o.stop(t+.3);
+  }
+  function hat(t,v){
+    const s = ac.createBufferSource(), hp = ac.createBiquadFilter(), e = ac.createGain();
+    s.buffer = noiseBuf; hp.type = 'highpass'; hp.frequency.value = 7000;
+    e.gain.setValueAtTime(.035*v,t); e.gain.exponentialRampToValueAtTime(.0005,t+.06);
+    s.connect(hp); hp.connect(e); e.connect(dry); s.start(t,Math.random()*1.5,.1);
+  }
+  function swell(t,dur){
+    const s = ac.createBufferSource(), bp = ac.createBiquadFilter(), e = ac.createGain();
+    s.buffer = noiseBuf; s.loop = true; bp.type = 'bandpass'; bp.Q.value = 3;
+    bp.frequency.setValueAtTime(350,t); bp.frequency.linearRampToValueAtTime(1300,t+dur*.7);
+    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(.05,t+dur*.6); e.gain.linearRampToValueAtTime(0,t+dur);
+    s.connect(bp); bp.connect(e); e.connect(bus); s.start(t); s.stop(t+dur+.1);
+  }
+
+  /* A 16-step tune that repeats and slowly changes, so it feels like a song and not a random walk. */
+  function makePhrase(){
+    const m = effective(), L = m.scale.length, p = [];
+    let i = L >> 1;
+    for(let k=0;k<16;k++){
+      if(Math.random() < m.dens*(.7+.5*st.intensity) + .1){
+        i = clamp(i + ((Math.random()*5)|0) - 2 + (m.bias || 0), 0, L-1);
+        p.push(i);
+      } else p.push(null);
+    }
+    if(p[0] == null) p[0] = 0;
+    return p;
+  }
+  function mutatePhrase(){
+    const L = effective().scale.length;
+    st.phrase = st.phrase.map(v => {
+      if(Math.random() > .12) return v;
+      if(Math.random() < .3) return null;
+      return clamp((v == null ? L>>1 : v) + ((Math.random()*3)|0) - 1, 0, L-1);
+    });
+  }
+
+  function scheduleChord(t){
+    const m = effective(), c = m.prog[st.chordIdx % m.prog.length];
+    st.chordIdx++;
+    const ints = QI[c.q], tr = TRANS[st.variant % TRANS.length];
+    const base = m.root + tr + c.r + (m.root < 45 ? 0 : -12);
+    st.curChord = {tones: ints.map(i => c.r + i)};
+    const gs = (m.padGain*(.8+.4*st.intensity)) / Math.sqrt(ints.length);
+    ints.forEach(i => padVoice(t, mtof(base+i), {wave:m.padWave, lp:m.padLp || 1800, gain:gs, dur:m.chordDur, det:m.wide ? 12 : 6}));
+    if(m.swell && Math.random() < m.swell) swell(t, m.chordDur*.9);
+  }
+  function scheduleStep(t){
+    const m = effective(), n = st.step++, tr = TRANS[st.variant % TRANS.length];
+    if(!st.phrase.length) st.phrase = makePhrase();
+    const pos = n % 16;
+    if(pos === 0 && n > 0) mutatePhrase();
+    const slot = st.phrase[pos];
+    let semi = null;
+    if(slot != null && Math.random() < .92) semi = m.scale[Math.min(slot, m.scale.length-1)];
+    else if(st.curChord && Math.random() < m.dens*.18*(.75+.5*st.intensity)){
+      const tn = st.curChord.tones; semi = tn[(Math.random()*tn.length)|0];
+    }
+    if(semi != null){
+      const oc = m.oct[(slot == null ? 0 : slot) % m.oct.length];
+      const f = mtof(m.root + tr + semi + oc);
+      voice(t, f, {wave:m.wave, partials:m.partials, lp:m.lp*(.7+.6*st.intensity), gain:m.gain*(.7+.3*Math.random())*(.8+.4*st.intensity), dur:m.dur});
+    }
+    if(m.kick && n % m.kick === 0) kick(t,.2);
+    if(m.hat && n % 2 === 1) hat(t,m.hat);
+    if(m.bass && n % 4 === 0 && st.curChord){
+      voice(t, mtof(m.root + tr + st.curChord.tones[0] - 12 + (m.root < 45 ? 12 : 0)), {wave:'sawtooth', partials:[[1,1]], lp:520, gain:.1, dur:.7});
+    }
+    if(m.pulse){ kick(t,.07); kick(t+.28,.045); }
+  }
+  const stepDur = () => MODES[st.mode].step * (1.3 - .55*st.intensity);
+
+  function tick(){
+    if(!ac || !st.on || st.own) return;
+    const now = ac.currentTime, m = effective();
+    while(st.nextChordT < now + .8){ scheduleChord(Math.max(st.nextChordT, now)); st.nextChordT += m.chordDur; }
+    while(st.nextT < now + .6){ scheduleStep(Math.max(st.nextT, now)); st.nextT += stepDur(); }
+  }
+  function restartClock(){
+    if(!ac) return;
+    st.chordIdx = 0; st.step = 0; st.phrase = makePhrase();
+    st.nextChordT = ac.currentTime + .05; st.nextT = ac.currentTime + .1;
+  }
+
+  async function start(){
+    if(!ensure()) return false;
+    await ac.resume();
+    st.on = true;
+    if(!st.own) restartClock();
+    master.gain.cancelScheduledValues(ac.currentTime);
+    master.gain.setTargetAtTime(volGain(), ac.currentTime, .4);
+    if(!st.timer) st.timer = setInterval(tick, 100);
+    return true;
+  }
+  function stop(){
+    st.on = false;
+    if(ac){ master.gain.cancelScheduledValues(ac.currentTime); master.gain.setTargetAtTime(0, ac.currentTime, .25); }
+    setTimeout(() => { if(!st.on) stopOwn(); }, 700);
+  }
+  function setMode(m){
+    if(!MODES[m] || m === st.mode) return;
+    st.mode = m; restartClock();
+  }
+  function setWorld(w){
+    if(!WORLDS[w] || w === st.world) return;
+    st.world = w; restartClock();
+  }
+  function skip(){ st.variant++; restartClock(); }
+  function setVol(v){
+    st.vol = v;
+    if(ac && st.on) master.gain.setTargetAtTime(volGain(), ac.currentTime, .1);
+  }
+  async function playFile(file, onEnd){
+    if(!ensure()) throw new Error('no audio');
+    const my = ++st.tok;
+    await ac.resume();
+    const buf = await ac.decodeAudioData(await file.arrayBuffer());
+    if(my !== st.tok) return;
+    stopOwn();
+    const src = ac.createBufferSource();
+    src.buffer = buf; src.connect(userGain);
+    src.onended = () => { if(st.own === src){ st.own = null; st.ownName = ''; if(onEnd) onEnd(); } };
+    src.start();
+    st.own = src; st.ownName = file.name; st.on = true;
+    master.gain.cancelScheduledValues(ac.currentTime);
+    master.gain.setTargetAtTime(volGain(), ac.currentTime, .3);
+    if(!st.timer) st.timer = setInterval(tick, 100);
+  }
+  function stopOwn(){
+    if(st.own){ st.own.onended = null; try{ st.own.stop(); }catch(e){} st.own = null; st.ownName = ''; }
+  }
+  function backToGenerative(){ st.tok++; stopOwn(); if(st.on) restartClock(); }
+  function level(){
+    if(!ac || !st.on) return 0;
+    analyser.getByteFrequencyData(freqData);
+    let s = 0; for(let i=1;i<13;i++) s += freqData[i];
+    return clamp(s/(12*255)*1.6, 0, 1);
+  }
+  return {
+    start, stop, setMode, setWorld, skip, setVol, playFile, backToGenerative, level,
+    setIntensity: v => { st.intensity = clamp(v,.1,1); },
+    get on(){ return st.on; },
+    get mode(){ return st.mode; },
+    get world(){ return st.world; },
+    get variant(){ return st.variant; },
+    get own(){ return st.own ? st.ownName : ''; }
+  };
+})();
+
+/* ---------- mapping feelings to a mood of music ---------- */
+function modeForItems(items){
+  if(!items.length) return 'minimal';
+  const top = items[0], lb = (top.label || '').toLowerCase();
+  if(/nostalg|homesick|reminisc|bittersweet|স্মৃতি/.test(lb)) return 'dreamy';
+  if(/deep think|thought|ponder|reflect|contempl|introspect|pensive/.test(lb)) return 'minimal';
+  return top.cat;
+}
+
+/* =====================================================
+   THE ORB
+   ===================================================== */
+const cv = $('orb'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function resize(){
+  const r = cv.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = r.width; H = r.height;
+  cv.width = Math.max(1,Math.round(W*DPR)); cv.height = Math.max(1,Math.round(H*DPR));
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+resize();
+if(window.ResizeObserver) new ResizeObserver(resize).observe(cv); else window.addEventListener('resize', resize);
+
+const NB = 9;
+const blobs = [];
+for(let i=0;i<NB;i++){
+  blobs.push({a:Math.random()*TAU, o:.1+Math.random()*.36, s:.25+Math.random()*.55, p:Math.random()*TAU,
+              z:.42+Math.random()*.32, q:(i+.5)/NB, c:[120,120,180]});
+}
+const parts = [];
+let tt = 0, lastT = performance.now(), level = 0, frameN = 0, ringRot = 0;
+
+function draw(now){
+  requestAnimationFrame(draw);
+  const dt = Math.min(.05,(now-lastT)/1000); lastT = now;
+  if(document.hidden || !W) return;
+  frameN++;
+  const k = 1 - Math.exp(-dt*2.4);
+  let sumW = 0;
+  CATS.forEach(c => { cw[c.id] += (tw[c.id]-cw[c.id])*k; sumW += cw[c.id]; });
+  ci += (tIntensity-ci)*k;
+  let sp = 0, wb = 0, sk = 0; const gr = [0,0,0];
+  const segs = []; let acc = 0;
+  CATS.forEach(c => {
+    const w = cw[c.id]/(sumW||1);
+    sp += w*c.speed; wb += w*c.wob; sk += w*c.spark;
+    gr[0] += w*c.rgb[0]; gr[1] += w*c.rgb[1]; gr[2] += w*c.rgb[2];
+    acc += w; segs.push({c:c, w:w, end:acc});
+  });
+  const motion = reduce ? .2 : 1;
+  const think = S.busy ? 1.7 : 1;
+  tt += dt*sp*(.65+.7*ci)*motion*think;
+  level += (Music.level()-level)*.2;
+  ringRot += dt*.05*motion*(S.busy ? 4 : 1);
+
+  const cx = W/2, cy = H/2;
+  const R = Math.min(W,H)*.33*(1 + level*.07 + (reduce ? 0 : Math.sin(tt*.9)*.012));
+  const gi = .55 + .7*ci;
+  const gc = Math.round(gr[0]) + ',' + Math.round(gr[1]) + ',' + Math.round(gr[2]);
+  ctx.clearRect(0,0,W,H);
+
+  /* outer glow */
+  let g = ctx.createRadialGradient(cx,cy,R*.7,cx,cy,R*2);
+  g.addColorStop(0,'rgba(' + gc + ',' + (.26*gi).toFixed(3) + ')');
+  g.addColorStop(1,'rgba(' + gc + ',0)');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  /* body */
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU); ctx.clip();
+  ctx.fillStyle = '#090b16'; ctx.fillRect(cx-R,cy-R,R*2,R*2);
+  ctx.globalCompositeOperation = 'lighter';
+  g = ctx.createRadialGradient(cx,cy,0,cx,cy,R);
+  g.addColorStop(0,'rgba(' + gc + ',' + (.28*gi).toFixed(3) + ')');
+  g.addColorStop(1,'rgba(' + gc + ',0)');
+  ctx.fillStyle = g; ctx.fillRect(cx-R,cy-R,R*2,R*2);
+  blobs.forEach(b => {
+    let seg = segs[segs.length-1];
+    for(let i=0;i<segs.length;i++){ if(segs[i].end >= b.q){ seg = segs[i]; break; } }
+    const tc = seg.c.rgb;
+    b.c[0] += (tc[0]-b.c[0])*k*2; b.c[1] += (tc[1]-b.c[1])*k*2; b.c[2] += (tc[2]-b.c[2])*k*2;
+    const ang = b.a + tt*b.s;
+    const orR = (b.o + wb*Math.sin(tt*3.1+b.p*4)*.05 + .06*Math.sin(tt*1.3+b.p))*R;
+    const x = cx + Math.cos(ang)*orR, y = cy + Math.sin(ang*1.3+b.p)*orR;
+    const rr = R*b.z*(1 + .18*Math.sin(tt*1.7+b.p*2) + wb*.1*Math.sin(tt*4+b.p));
+    const bg = ctx.createRadialGradient(x,y,0,x,y,rr);
+    const col = Math.round(b.c[0]) + ',' + Math.round(b.c[1]) + ',' + Math.round(b.c[2]);
+    bg.addColorStop(0,'rgba(' + col + ',' + (.6*gi).toFixed(3) + ')');
+    bg.addColorStop(1,'rgba(' + col + ',0)');
+    ctx.fillStyle = bg; ctx.fillRect(x-rr,y-rr,rr*2,rr*2);
+  });
+  ctx.restore();
+
+  /* glass highlight + rim */
+  g = ctx.createRadialGradient(cx-R*.35,cy-R*.4,0,cx-R*.35,cy-R*.4,R*.65);
+  g.addColorStop(0,'rgba(255,255,255,.17)'); g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU); ctx.clip(); ctx.fillStyle = g; ctx.fillRect(cx-R,cy-R,R*2,R*2); ctx.restore();
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,.12)';
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU); ctx.stroke();
+
+  /* spectrum ring: one arc per emotion, length = share of the mix */
+  const rr2 = R*1.17, lw = Math.max(3,R*.045);
+  ctx.lineCap = 'round'; ctx.lineWidth = lw;
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.beginPath(); ctx.arc(cx,cy,rr2,0,TAU); ctx.stroke();
+  let a0 = -Math.PI/2 + ringRot;
+  const gap = .07;
+  segs.forEach(s => {
+    const len = s.w*TAU;
+    if(len > gap + .02){
+      ctx.strokeStyle = rgbStr(s.c.rgb);
+      ctx.globalAlpha = .55 + .4*ci;
+      ctx.beginPath(); ctx.arc(cx,cy,rr2,a0+gap/2,a0+len-gap/2); ctx.stroke();
+    }
+    a0 += len;
+  });
+  ctx.globalAlpha = 1;
+
+  /* drifting sparks */
+  if(!reduce){
+    if(parts.length < 60 && Math.random() < sk*dt*16*(.5+ci)){
+      const b = blobs[(Math.random()*NB)|0];
+      parts.push({a:Math.random()*TAU, r:R*(1.02+Math.random()*.12), v:R*(.08+Math.random()*.22), life:1, sz:1+Math.random()*2.2, c:[b.c[0],b.c[1],b.c[2]]});
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    for(let i=parts.length-1;i>=0;i--){
+      const p = parts[i];
+      p.r += p.v*dt*(.6+sp*.4); p.life -= dt*.45;
+      if(p.life <= 0){ parts.splice(i,1); continue; }
+      ctx.fillStyle = 'rgba(' + Math.round(p.c[0]) + ',' + Math.round(p.c[1]) + ',' + Math.round(p.c[2]) + ',' + (p.life*.7).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(cx+Math.cos(p.a)*p.r, cy+Math.sin(p.a)*p.r, p.sz, 0, TAU); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  if(frameN % 8 === 0) document.documentElement.style.setProperty('--glow', gc);
+}
+requestAnimationFrame(draw);
+
+/* =====================================================
+   EMOTION STATE + READING + SPECTRUM CHIPS
+   ===================================================== */
+const spectrum = $('spectrum');
+CATS.forEach(c => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'chipc'; b.dataset.cat = c.id;
+  b.style.setProperty('--c', rgbStr(c.rgb)); b.title = c.sub;
+  b.setAttribute('aria-pressed','false');
+  const d = document.createElement('i'); d.className = 'dot';
+  const s = document.createElement('span'); s.textContent = c.name;
+  b.append(d,s);
+  b.addEventListener('click', () => toggleCat(c.id));
+  spectrum.append(b);
+});
+
+function toggleCat(id){
+  S.musicOverride = null;
+  const has = S.items.some(i => i.cat === id);
+  const items = has ? S.items.filter(i => i.cat !== id) : S.items.concat([{cat:id, label:CAT[id].name, intensity:.6}]);
+  setEmotions(items);
+}
+
+function setEmotions(items){
+  S.items = items.slice().sort((a,b) => b.intensity-a.intensity);
+  CATS.forEach(c => { tw[c.id] = 0; });
+  if(!S.items.length){
+    CATS.forEach(c => { tw[c.id] = 1/CATS.length; });
+    tIntensity = .3;
+  } else {
+    const sum = S.items.reduce((s,i) => s+i.intensity, 0);
+    S.items.forEach(i => { tw[i.cat] += i.intensity/sum; });
+    tIntensity = clamp(Math.max.apply(null, S.items.map(i => i.intensity)), .2, 1);
+  }
+  renderReading();
+  syncMusic();
+  maybeSwitchSong();
+  updateYT();
+}
+
+function renderReading(){
+  const title = $('readTitle'), sub = $('readSub');
+  if(!S.items.length){
+    title.textContent = 'Open spectrum';
+    sub.textContent = 'Tell me what you feel, in any words, in any language.';
+  } else {
+    const sum = S.items.reduce((s,i) => s+i.intensity, 0);
+    title.textContent = S.items.slice(0,3).map(i => i.label).join(' · ');
+    sub.textContent = S.items.map(i => i.label + ' ' + Math.round(i.intensity/sum*100) + '%').join(' · ');
+  }
+  cv.setAttribute('aria-label', 'Emotion Spectrum Orb. ' + title.textContent + '.');
+  spectrum.querySelectorAll('.chipc').forEach(b => {
+    const id = b.dataset.cat;
+    b.setAttribute('aria-pressed', S.items.some(i => i.cat === id) ? 'true' : 'false');
+    b.style.setProperty('--w', S.items.length ? Math.round(tw[id]*100) : 0);
+  });
+}
+
+/* ---------- quick local reading, so the orb reacts at once ---------- */
+const LEX = {
+  happiness:/(?:\b(?:happy|happier|joy\w*|excit\w*|thrill\w*|grateful|thankful|hope\w*|proud|delight\w*|amazing|wonderful|celebrat\w*|over the moon|can't wait)\b)|খুশি|আনন্দ|দারুণ|মজা|কৃতজ্ঞ|আশা|গর্ব|উচ্ছ্বসিত|ভালো লাগছে/gi,
+  sadness:/(?:\b(?:sad|sadness|lonely|loneliness|grie\w*|disappoint\w*|nostalg\w*|cry\w*|empty|heartache|depress\w*|miss(?:ing)? (?:him|her|them|you|home))\b)|দুঃখ|কষ্ট|মন খারাপ|একা|কান্না|কাঁদ|বিষণ্ণ|শূন্য|স্মৃতি|মিস করছি|মনে পড়ছে/gi,
+  anger:/(?:\b(?:angry|anger|furious|mad at|irritat\w*|annoy\w*|frustrat\w*|resent\w*|jealous\w*|hate|pissed|rage)\b)|রাগ|বিরক্ত|ঘৃণা|জ্বলে|হিংসা|ক্ষোভ|ফ্রাস্ট্রেট/gi,
+  love:/(?:\b(?:love|loved|loving|romance|romantic|crush|attracted|attachment|heartbreak|heartbroken|in love|adore)\b)|ভালোবাস\S*|ভালবাস\S*|প্রেম|ক্রাশ|মায়া|ব্রেকআপ/gi,
+  lust:/(?:\b(?:lust|horny|turned on|aroused|sexual\w*|sexy|desire|fantas\w*|intimacy|intimate|seduc\w*|sensual|passion\w*)\b)|কামনা|যৌন|শরীর|আকর্ষণ|ফ্যান্টাসি|সেক্সি/gi,
+  fear:/(?:\b(?:afraid|scared|fear\w*|anxious|anxiety|nervous|worried|worry|panic\w*|insecure|uncertain|dread\w*|terrified)\b)|ভয়|দুশ্চিন্তা|দুঃচিন্তা|উদ্বিগ্ন|আতঙ্ক|নার্ভাস|অনিশ্চিত|চিন্তা হচ্ছে/gi,
+  confidence:/(?:\b(?:confiden\w*|motivat\w*|ambiti\w*|courage\w*|brave|determined|capable|unstoppable|self-esteem)\b)|আত্মবিশ্বাস|সাহস|অনুপ্রাণিত|প্রস্তুত|পারব|লক্ষ্য/gi,
+  curiosity:/(?:\b(?:curious|curiosity|wonder\w*|explor\w*|creativ\w*|discover\w*|fascinat\w*|confus\w*)\b)|কৌতূহল|জানতে ইচ্ছা|অবাক|ভাবছি|আইডিয়া|সৃজনশীল/gi,
+  complex:/(?:\b(?:guilt\w*|ashamed|shame\w*|envy|envious|regret\w*|ambivalent|mixed feelings|torn|conflicted|bittersweet)\b)|অপরাধবোধ|লজ্জা|ঈর্ষা|দ্বিধা|আফসোস|অনুশোচনা|মিশ্র অনুভূতি/gi
+};
+const CRISIS = /(?:kill myself|killing myself|end my life|ending my life|want to die|wanna die|don'?t want to (?:live|be alive)|no reason to live|suicid\w*|self[- ]?harm|hurt myself|cut myself|better off dead)|আত্মহত্যা|মরে যেতে চাই|মরতে চাই|বাঁচতে চাই না|বেঁচে থাকতে চাই না|নিজেকে শেষ|নিজের ক্ষতি/i;
+
+function detectLocal(text){
+  const out = [];
+  CATS.forEach(c => {
+    const m = text.match(LEX[c.id]);
+    if(m && m.length) out.push({cat:c.id, label:c.name, score:m.length});
+  });
+  out.sort((a,b) => b.score-a.score);
+  const bang = /!/.test(text) ? .08 : 0;
+  const items = out.slice(0,3).map(o => ({cat:o.cat, label:o.label, intensity:clamp(.42 + .12*(o.score-1) + bang, .3, .9)}));
+  return {items:items, crisis:CRISIS.test(text)};
+}
+
+/* =====================================================
+   MUSIC UI: mood music, world styles, and My songs
+   ===================================================== */
+const ICON = {
+  play:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>',
+  skip:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm9-12v12h2V6h-2z" fill="currentColor"/></svg>'
+};
+$('mSkip').innerHTML = ICON.skip;
+const mMode = $('mMode'), mWorld = $('mWorld');
+Object.keys(MODES).forEach(k => {
+  const o = document.createElement('option');
+  o.value = k; o.textContent = MODES[k].title + ' · ' + MODES[k].cat;
+  mMode.append(o);
+});
+Object.keys(WORLDS).forEach(k => {
+  const o = document.createElement('option');
+  o.value = k; o.textContent = WORLDS[k].label;
+  mWorld.append(o);
+});
+let uid = 0;
+const MAX_SONGS = 40;
+
+function updateMusicUI(){
+  const on = Music.on, songs = S.source === 'songs';
+  $('mPlay').innerHTML = on ? ICON.pause : ICON.play;
+  $('mPlay').setAttribute('aria-label', on ? 'Pause music' : 'Play music');
+  $('mSkip').disabled = songs ? S.playlist.length < 1 : false;
+  $('mSkip').setAttribute('aria-label', songs ? 'Next song' : 'Skip to another variation');
+  $('srcMood').setAttribute('aria-pressed', songs ? 'false' : 'true');
+  $('srcSongs').setAttribute('aria-pressed', songs ? 'true' : 'false');
+  mMode.disabled = songs; mWorld.disabled = songs;
+  const tr = $('mTrack');
+  if(songs){
+    const t = S.cur >= 0 ? S.playlist[S.cur] : null;
+    if(!S.playlist.length) tr.textContent = 'Add songs below, then press play.';
+    else if(on && t) tr.textContent = 'Now playing · ' + t.name;
+    else tr.textContent = 'My songs · ' + S.playlist.length + (S.playlist.length === 1 ? ' track' : ' tracks');
+  } else if(!on){
+    tr.textContent = 'Silent. Press play.';
+  } else {
+    const w = Music.world !== 'ambient' ? ' · ' + WORLDS[Music.world].label.split(' · ')[0] : '';
+    tr.textContent = MODES[Music.mode].title + ' · ' + MODES[Music.mode].cat + w + (Music.variant ? ' · variation ' + (Music.variant+1) : '');
+  }
+}
+function syncMusic(){
+  const follow = $('mFollow').checked;
+  const mode = follow ? (S.musicOverride || modeForItems(S.items)) : mMode.value;
+  Music.setMode(mode);
+  mMode.value = mode;
+  Music.setIntensity(S.items.length ? tIntensity : .3);
+  updateMusicUI();
+}
+
+/* ----- My songs ----- */
+function pickTrack(){
+  const n = S.playlist.length; if(!n) return -1;
+  if($('mFollow').checked && S.items.length){
+    const top = S.items[0].cat, c = [];
+    S.playlist.forEach((t,i) => { if(t.tag === top && i !== S.cur) c.push(i); });
+    if(c.length) return c[(Math.random()*c.length)|0];
+  }
+  return (S.cur + 1) % n;
+}
+function nextTrack(){ const i = pickTrack(); if(i >= 0) playIndex(i); }
+async function playIndex(i){
+  const t = S.playlist[i]; if(!t) return;
+  S.cur = i; renderList();
+  $('mTrack').textContent = 'Loading ' + t.name + '...';
+  try{ await Music.playFile(t.file, nextTrack); }
+  catch(err){ $('mTrack').textContent = 'Could not read ' + t.name + ' as audio. Try another file.'; return; }
+  updateMusicUI();
+}
+function maybeSwitchSong(){
+  if(S.source !== 'songs' || !Music.on || !$('mFollow').checked || !S.playlist.length || !S.items.length) return;
+  const top = S.items[0].cat, cur = S.cur >= 0 ? S.playlist[S.cur] : null;
+  if(cur && cur.tag === top) return;
+  const c = []; S.playlist.forEach((t,i) => { if(t.tag === top) c.push(i); });
+  if(c.length) playIndex(c[(Math.random()*c.length)|0]);
+}
+function setSource(src, idx){
+  const wasOn = Music.on;
+  if(src === 'songs'){
+    S.source = 'songs';
+    if(wasOn && !Music.own) Music.stop();
+    if(idx != null) playIndex(idx);
+    else if(wasOn && S.playlist.length) playIndex(pickTrack());
+  } else {
+    S.source = 'mood'; S.cur = -1;
+    if(Music.own) Music.backToGenerative();
+    syncMusic();
+  }
+  renderList(); updateMusicUI();
+}
+function renderList(){
+  const ol = $('plist');
+  ol.replaceChildren();
+  ol.hidden = !S.playlist.length;
+  S.playlist.forEach((t,i) => {
+    const li = document.createElement('li'); if(i === S.cur) li.className = 'cur';
+    const nm = document.createElement('button');
+    nm.type = 'button'; nm.className = 'pname'; nm.textContent = t.name; nm.title = 'Play this song';
+    nm.addEventListener('click', () => setSource('songs', i));
+    const sel = document.createElement('select');
+    sel.setAttribute('aria-label', 'Feeling for ' + t.name);
+    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Any feeling'; sel.append(o0);
+    CATS.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.append(o); });
+    sel.value = t.tag;
+    sel.addEventListener('change', () => { t.tag = sel.value; });
+    const rm = document.createElement('button');
+    rm.type = 'button'; rm.className = 'rm'; rm.textContent = '×'; rm.setAttribute('aria-label', 'Remove ' + t.name);
+    rm.addEventListener('click', () => {
+      if(i === S.cur){ Music.stop(); S.cur = -1; } else if(i < S.cur){ S.cur--; }
+      S.playlist.splice(i,1); renderList(); updateMusicUI();
+    });
+    li.append(nm,sel,rm); ol.append(li);
+  });
+}
+
+async function togglePlay(){
+  if(Music.on){ Music.stop(); updateMusicUI(); return; }
+  if(S.source === 'songs'){
+    if(!S.playlist.length){ updateMusicUI(); return; }
+    await playIndex(S.cur >= 0 ? S.cur : pickTrack());
+    return;
+  }
+  try{
+    const ok = await Music.start();
+    if(!ok) $('mTrack').textContent = 'This browser cannot play audio here.';
+  }catch(e){ $('mTrack').textContent = 'Audio could not start. Try pressing play again.'; }
+  syncMusic();
+}
+$('mPlay').addEventListener('click', togglePlay);
+$('mSkip').addEventListener('click', () => {
+  if(S.source === 'songs'){ nextTrack(); return; }
+  Music.skip(); updateMusicUI();
+});
+$('mVol').addEventListener('input', e => Music.setVol(Number(e.target.value)/100));
+Music.setVol(.55);
+$('mFollow').addEventListener('change', syncMusic);
+mMode.addEventListener('change', () => { $('mFollow').checked = false; syncMusic(); });
+mWorld.addEventListener('change', () => { Music.setWorld(mWorld.value); updateMusicUI(); });
+$('srcMood').addEventListener('click', () => setSource('mood'));
+$('srcSongs').addEventListener('click', () => setSource('songs'));
+$('mFile').addEventListener('change', e => {
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  let added = 0;
+  files.forEach(f => {
+    if(S.playlist.length >= MAX_SONGS) return;
+    if(f.type && f.type.indexOf('audio/') !== 0) return;
+    S.playlist.push({id:++uid, file:f, name:f.name.replace(/\.[^.]+$/,''), tag:''});
+    added++;
+  });
+  if(!added) return;
+  setSource('songs');
+});
+
+/* =====================================================
+   SONGS ON YOUTUBE: searches matched to your feeling and language.
+   YouTube cannot be embedded in this page, so every link opens in a new tab.
+   ===================================================== */
+const LANGS = [
+  ['Bangla','Bangla'],['English','English'],['Hindi','Hindi'],['Urdu','Urdu'],['Arabic','Arabic'],
+  ['Spanish','Spanish'],['Korean','Korean'],['Turkish','Turkish'],['Punjabi','Punjabi'],
+  ['Tamil','Tamil'],['Japanese','Japanese'],['Persian','Persian'],['','Any language']
+];
+const YT_KINDS = [
+  {key:'happiness', label:'Happy and upbeat', rgb:CAT.happiness.rgb, q:'happy upbeat songs'},
+  {key:'sadness',   label:'Sad and emotional', rgb:CAT.sadness.rgb, q:'sad emotional songs'},
+  {key:'anger',     label:'Intense and powerful', rgb:CAT.anger.rgb, q:'intense powerful songs'},
+  {key:'love',      label:'Romantic', rgb:CAT.love.rgb, q:'romantic love songs'},
+  {key:'lust',      label:'Sensual and slow', rgb:CAT.lust.rgb, q:'sensual slow songs', safeQ:'romantic slow songs'},
+  {key:'fear',      label:'Dark and atmospheric', rgb:CAT.fear.rgb, q:'dark atmospheric music'},
+  {key:'confidence',label:'Motivational', rgb:CAT.confidence.rgb, q:'motivational songs'},
+  {key:'curiosity', label:'Chill and curious', rgb:CAT.curiosity.rgb, q:'lofi chill music'},
+  {key:'complex',   label:'Bittersweet', rgb:CAT.complex.rgb, q:'bittersweet songs'},
+  {key:'dreamy',    label:'Nostalgic old songs', rgb:[150,170,255], q:'nostalgic old songs'},
+  {key:'minimal',   label:'Deep focus and calm', rgb:[150,160,185], q:'calm ambient focus music'}
+];
+let ytLang = 'Bangla';
+const YT_HOSTS = ['www.youtube.com','youtube.com','m.youtube.com','music.youtube.com','youtu.be'];
+
+function ytSearchUrl(kind){
+  const phrase = (kind.safeQ && !S.adult) ? kind.safeQ : kind.q;
+  const q = (ytLang ? ytLang + ' ' : '') + phrase;
+  return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+}
+function buildYT(){
+  const langs = $('ytLangs');
+  LANGS.forEach(l => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.lang = l[0]; b.textContent = l[1];
+    b.setAttribute('aria-pressed', l[0] === ytLang ? 'true' : 'false');
+    b.addEventListener('click', () => {
+      ytLang = l[0];
+      langs.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.lang === ytLang ? 'true' : 'false'));
+      updateYT();
+    });
+    langs.append(b);
+  });
+  const grid = $('ytGrid');
+  YT_KINDS.forEach(k => {
+    const a = document.createElement('a');
+    a.className = 'ytlink'; a.dataset.key = k.key;
+    a.target = '_blank'; a.rel = 'noopener noreferrer';
+    a.style.setProperty('--c', rgbStr(k.rgb));
+    const d = document.createElement('i'); d.className = 'dot';
+    const s = document.createElement('span'); s.textContent = k.label;
+    a.append(d,s); grid.append(a);
+  });
+  const tag = $('ytTag');
+  const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Any feeling'; tag.append(o0);
+  CATS.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; tag.append(o); });
+}
+function updateYT(){
+  const now = S.items.length ? modeForItems(S.items) : '';
+  $('ytGrid').querySelectorAll('.ytlink').forEach(a => {
+    const k = YT_KINDS.find(x => x.key === a.dataset.key);
+    a.href = ytSearchUrl(k);
+    a.dataset.now = (a.dataset.key === now) ? '1' : '0';
+    a.title = (ytLang || 'Any language') + ' · ' + k.label + ' · opens YouTube in a new tab';
+  });
+  renderLinks();
+}
+
+/* ----- saved YouTube links ----- */
+function parseYT(raw){
+  let u;
+  try{ u = new URL(String(raw).trim()); }catch(e){ return null; }
+  if(u.protocol !== 'https:' || YT_HOSTS.indexOf(u.hostname) < 0) return null;
+  return u.href;
+}
+function renderLinks(){
+  const ol = $('ytList');
+  ol.replaceChildren();
+  ol.hidden = !S.links.length;
+  const top = S.items.length ? S.items[0].cat : '';
+  S.links.forEach((l,i) => {
+    const li = document.createElement('li');
+    if(top && l.tag === top) li.className = 'cur';
+    const a = document.createElement('a');
+    a.className = 'pname'; a.href = l.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    a.textContent = l.title; a.title = 'Open on YouTube in a new tab';
+    const sel = document.createElement('select');
+    sel.setAttribute('aria-label', 'Feeling for ' + l.title);
+    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Any feeling'; sel.append(o0);
+    CATS.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.append(o); });
+    sel.value = l.tag;
+    sel.addEventListener('change', () => { l.tag = sel.value; renderLinks(); });
+    const rm = document.createElement('button');
+    rm.type = 'button'; rm.className = 'rm'; rm.textContent = '×'; rm.setAttribute('aria-label', 'Remove ' + l.title);
+    rm.addEventListener('click', () => { S.links.splice(i,1); renderLinks(); });
+    li.append(a,sel,rm); ol.append(li);
+  });
+}
+$('ytForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const msg = $('ytMsg');
+  const url = parseYT($('ytUrl').value);
+  if(!url){ msg.textContent = 'That is not a YouTube link. Paste one that starts with https://www.youtube.com or https://youtu.be.'; return; }
+  if(S.links.length >= 60){ msg.textContent = 'The list is full. Remove a link to add another.'; return; }
+  const title = $('ytTitle').value.trim().slice(0,80) || url.replace(/^https:\/\/(www\.)?/, '').slice(0,60);
+  S.links.push({url:url, title:title, tag:$('ytTag').value});
+  $('ytUrl').value = ''; $('ytTitle').value = ''; msg.textContent = '';
+  renderLinks();
+});
+buildYT();
+updateYT();
+
+/* =====================================================
+   CHAT
+   ===================================================== */
+const log = $('log'), input = $('input'), sendBtn = $('send');
+const toBottom = () => { log.scrollTop = log.scrollHeight; };
+
+function addUser(text){
+  const m = document.createElement('div'); m.className = 'msg user';
+  const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
+  m.append(b); log.append(m); toBottom();
+}
+function addNote(text){
+  const d = document.createElement('div'); d.className = 'sys'; d.textContent = text;
+  log.append(d); toBottom();
+}
+function addCrisisCard(){
+  const d = document.createElement('div'); d.className = 'care'; d.setAttribute('role','status');
+  const s = document.createElement('strong'); s.textContent = 'You matter, and you do not have to carry this alone.';
+  const p = document.createElement('p');
+  p.textContent = 'If you might act on these thoughts, or you are in danger right now, please call your local emergency number or go to someone near you, a family member, a friend or a neighbour, and tell them you need company. I am staying right here in this conversation with you.';
+  d.append(s,p); log.append(d); toBottom();
+}
+
+function buildFix(api){
+  const wrap = api.fix;
+  wrap.replaceChildren();
+  const link = document.createElement('button');
+  link.type = 'button'; link.className = 'link'; link.textContent = 'Felt differently?';
+  const panel = document.createElement('div'); panel.className = 'fixpanel'; panel.hidden = true;
+  const p = document.createElement('p'); p.textContent = 'Pick what you actually feel. You can choose more than one.';
+  const grid = document.createElement('div'); grid.className = 'fixgrid';
+  const chosen = new Set();
+  CATS.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = c.name; b.style.setProperty('--c', rgbStr(c.rgb));
+    b.setAttribute('aria-pressed','false');
+    b.addEventListener('click', () => {
+      if(chosen.has(c.id)){ chosen.delete(c.id); b.setAttribute('aria-pressed','false'); }
+      else { chosen.add(c.id); b.setAttribute('aria-pressed','true'); }
+    });
+    grid.append(b);
+  });
+  const ok = document.createElement('button');
+  ok.type = 'button'; ok.className = 'btn primary'; ok.textContent = 'Update the orb';
+  ok.addEventListener('click', () => {
+    if(!chosen.size) return;
+    applyCorrection(Array.from(chosen));
+    panel.hidden = true;
+  });
+  panel.append(p,grid,ok);
+  link.addEventListener('click', () => { panel.hidden = !panel.hidden; });
+  wrap.append(link,panel);
+}
+function applyCorrection(cats){
+  S.musicOverride = null;
+  setEmotions(cats.map(id => ({cat:id, label:CAT[id].name, intensity:.65})));
+  S.pendingNote = '[Correction from the person: they say they actually feel ' + cats.map(id => CAT[id].name.toLowerCase()).join(' and ') + '. Accept this and follow their lead.]';
+  addNote('Thank you. The orb now follows what you said you feel.');
+}
+
+function addAI(text, opts){
+  opts = opts || {};
+  const m = document.createElement('div'); m.className = 'msg ai';
+  const who = document.createElement('div'); who.className = 'who'; who.textContent = 'SOULSPACE';
+  const body = document.createElement('div'); body.className = 'body';
+  const tags = document.createElement('div'); tags.className = 'tags';
+  const fix = document.createElement('div'); fix.className = 'fix';
+  m.append(who,body,tags,fix); log.append(m);
+  const api = {
+    el:m, body:body, fix:fix,
+    setText(t, cls){
+      body.textContent = t;
+      body.classList.toggle('typing', !t && !!opts.typing);
+      body.classList.toggle('err', cls === 'err');
+      toBottom();
+    },
+    setTags(items){
+      tags.replaceChildren();
+      items.forEach(i => {
+        const s = document.createElement('span'); s.className = 'tag';
+        s.style.setProperty('--c', rgbStr(CAT[i.cat].rgb)); s.textContent = i.label; tags.append(s);
+      });
+      if(items.length) buildFix(api);
+    }
+  };
+  api.setText(text);
+  return api;
+}
+
+/* welcome */
+(function welcome(){
+  const a = addAI('I am here for all of it: the joy, the anger, the longing, the doubt, and the feelings that are hard to name. Say what is on your mind in your own words. The orb and the music will follow you.\n\nআপনি বাংলা বা ইংরেজি, যে ভাষায় স্বস্তি পান, সে ভাষাতেই লিখুন।');
+  const box = document.createElement('div'); box.className = 'suggest'; box.id = 'suggest';
+  ['I got the news I was waiting for and I cannot stop smiling',
+   'I am furious with someone I still care about',
+   'Something feels off and I cannot name it',
+   'আজ পুরোনো দিনের কথা খুব মনে পড়ছে'].forEach(t => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = t;
+    b.addEventListener('click', () => send(t));
+    box.append(b);
+  });
+  const row = document.createElement('div'); row.className = 'inline-actions';
+  const snd = document.createElement('button'); snd.type = 'button'; snd.className = 'btn'; snd.textContent = 'Turn on mood music';
+  snd.addEventListener('click', () => { if(!Music.on) togglePlay(); });
+  row.append(snd);
+  a.el.append(box,row);
+})();
+function hideSuggest(){
+  const s = $('suggest'); if(s){ const row = s.nextElementSibling; s.remove(); if(row) row.remove(); }
+}
+
+/* ---------- Claude connection ---------- */
+let samplePromise = null;
+function getSample(){
+  if(!samplePromise){
+    samplePromise = (window.claude && window.claude.use ? window.claude.use('sample') : Promise.resolve(null)).catch(() => null);
+  }
+  return samplePromise;
+}
+getSample().then(s => {
+  if(!s){
+    S.replyOff = true;
+    const n = $('aiNote'); n.hidden = false;
+    n.textContent = 'Replies from Claude are not available in this view. The orb and music still react to what you write.';
+  }
+});
+
+function rules(){
+  const intimacy = S.adult
+    ? 'Intimacy mode is ON: the person confirmed they are 18 or older. Talk about desire, attraction, fantasy, intimacy and relationships in a mature, respectful, non-judgmental, open-minded way, including communication, consent and self-understanding. Stay tasteful and non-explicit: no graphic sexual scenes and no erotica.'
+    : 'Intimacy mode is OFF. If the person brings up desire or attraction, respond warmly and without judgment, treat it as a normal human feeling, keep it non-explicit, and mention once, briefly, that the Intimacy (18+) switch at the top of the page lets you go deeper. Do not repeat that mention.';
+  return [
+    'You are SOULSPACE, a Universal Human Emotion and Thought Companion inside a website with a glowing Emotion Spectrum Orb and mood music. You talk with an adult about the full range of human feeling: happiness, sadness, anger, love, lust, fear, confidence, curiosity, and complex feelings such as guilt, shame, envy, regret and ambivalence. You are not limited to emotional support or mental wellness.',
+    '',
+    'Voice rules:',
+    '- Reply in the language and script the person writes in (Bengali, English, or a mix). Keep the reply natural: 2 to 5 short sentences, at most one question, plain text with no markdown.',
+    '- Adapt your personality to their emotional context. Anger: calm, patient, understanding; help them see what sits under it. Happiness: energetic, warm, share the joy. Sadness: gentle, supportive, stay with them. Fear: reassuring, patient, practical. Love: warm, thoughtful, aware of the relationship. Confidence: encouraging, with honest and realistic feedback. Curiosity: informative, intellectual, engaging. Jealousy or envy: help them trace what the feeling is pointing at. Confusion: simplify and untangle. Mixed feelings: name both sides without forcing one label.',
+    '- Never assume a single emotion. People feel mixed, shifting, contradictory and unnameable things. Offer your reading as a possibility ("it sounds like...") and invite correction. Emotion reading is not a diagnosis: never diagnose and never apply clinical labels to the person.',
+    '- Never make the person feel guilty or ashamed for any normal human emotion. You do not try to control or fix feelings; you help them understand, express, explore and reflect.',
+    '- If the person corrects your reading of their feelings, accept it without defending the earlier reading.',
+    '- Do not claim to be human, do not flatter, do not lecture.',
+    '',
+    'Desire and intimacy:',
+    '- ' + intimacy,
+    '- Always decline anything sexual that involves minors, non-consent or coercion, briefly and without shaming the person for having the feeling.',
+    '',
+    'Safety:',
+    '- If the person talks about wanting to die, ending their life, hurting themselves, or hurting someone else, set "crisis" to true. Respond with warmth and steadiness, say their pain matters, stay with them, and gently encourage them to reach someone near them or local emergency services right now if they might act. Do not describe methods. Do not say the wish to die makes sense. Keep it short and human.',
+    '',
+    'Output format (strict):',
+    'Line 1 is a single line of JSON and nothing else: {"emotions":[{"category":"sadness","label":"Nostalgia","intensity":0.7}],"crisis":false}',
+    '- category must be one of: happiness, sadness, anger, love, lust, fear, confidence, curiosity, complex.',
+    '- label is the specific feeling in one to three plain English words (for example "Nostalgia", "Jealousy", "Deep thinking", "Quiet dread"), or your best name for something hard to describe.',
+    '- Give 1 to 4 emotions, strongest first. intensity (0 to 1) is how strongly that feeling comes through.',
+    'Then a blank line. Then your reply to the person.'
+  ].join('\n');
+}
+
+function splitReply(t){
+  const m = t.match(/^\s*(?:```(?:json)?\s*)?(\{[^\n]*\})\s*(?:```)?[ \t]*\n+([\s\S]*)$/);
+  if(!m) return null;
+  try{ return {meta:JSON.parse(m[1]), body:m[2].replace(/^---\s*/,'')}; }catch(e){ return null; }
+}
+function metaItems(meta){
+  const arr = Array.isArray(meta && meta.emotions) ? meta.emotions : [];
+  return arr.slice(0,4).map(e => {
+    const cat = CAT[e && e.category] ? e.category : 'complex';
+    const label = String((e && e.label) || '').trim().slice(0,28) || CAT[cat].name;
+    return {cat:cat, label:label, intensity:clamp(Number(e && e.intensity) || .5, .1, 1)};
+  });
+}
+
+function setSendMode(busy){
+  S.busy = busy;
+  sendBtn.textContent = busy ? 'Stop' : 'Send';
+  sendBtn.classList.toggle('stop', busy);
+}
+
+async function send(raw){
+  const text = String(raw || '').trim();
+  if(!text || S.busy) return;
+  input.value = ''; autosize(); hideSuggest();
+  addUser(text);
+
+  const local = detectLocal(text);
+  let crisisShown = false;
+  const showCrisis = () => { if(!crisisShown){ crisisShown = true; addCrisisCard(); } };
+  if(local.items.length){ setEmotions(local.items); }
+  if(local.crisis){
+    showCrisis();
+    S.musicOverride = 'minimal';
+    if(!local.items.length) setEmotions([{cat:'sadness', label:'Heavy', intensity:.5}]); else syncMusic();
+  } else {
+    if(S.musicOverride){ S.musicOverride = null; syncMusic(); }
+  }
+
+  const sample = S.replyOff ? null : await getSample();
+  if(!sample){
+    if(!S.replyOff) S.replyOff = true;
+    addAI('Replies from Claude are not available in this view, but the orb and the music are following what you wrote.').setText('Replies from Claude are not available in this view, but the orb and the music are following what you wrote.', 'err');
+    return;
+  }
+
+  const savedNote = S.pendingNote;
+  const content = (savedNote ? savedNote + '\n\n' : '') + text;
+  S.pendingNote = '';
+  const turns = [{role:'user', content:rules()}].concat(S.turns.slice(-14), [{role:'user', content:content}]);
+
+  S.ctl = new AbortController();
+  setSendMode(true);
+  const ai = addAI('', {typing:true});
+  let metaDone = false, body = '';
+  const applyMeta = meta => {
+    metaDone = true;
+    const items = metaItems(meta);
+    if(items.length){
+      setEmotions(items);
+      ai.setTags(items);
+    }
+    if(meta && meta.crisis === true){
+      showCrisis();
+      S.musicOverride = 'minimal'; syncMusic();
+    }
+  };
+  try{
+    const res = await sample(turns, {
+      cache:false, signal:S.ctl.signal,
+      onText: u => {
+        const p = splitReply(u.text);
+        if(p){ if(!metaDone) applyMeta(p.meta); body = p.body; ai.setText(body); }
+      }
+    });
+    const p = splitReply(res.text);
+    if(p){ if(!metaDone) applyMeta(p.meta); body = p.body; }
+    else { body = res.text.replace(/^\s*(?:```(?:json)?\s*)?\{[^\n]*\}\s*(?:```)?\s*/,''); }
+    body = body.trim();
+    ai.setText(body || '...');
+    if(res.truncated) addNote('That reply was cut short. Ask me to continue if you want more.');
+    S.turns.push({role:'user', content:content}, {role:'assistant', content:body});
+  }catch(e){
+    const code = e && e.code;
+    if(code === 'cancelled'){
+      const partial = (e.text && splitReply(e.text)) ? splitReply(e.text).body.trim() : '';
+      ai.setText(partial ? partial + ' (stopped)' : 'Stopped.', partial ? undefined : 'err');
+      S.pendingNote = savedNote;
+    } else if(code === 'not_granted' || code === 'sampling_disabled' || code === 'not_declared' || code === 'capability_disabled' || code === 'capability_removed'){
+      S.replyOff = true; S.pendingNote = savedNote;
+      ai.setText('Replies from Claude are turned off for this view. The orb and music still follow what you write.', 'err');
+      const n = $('aiNote'); n.hidden = false;
+      n.textContent = 'To get replies, allow this page to use Claude when asked, then reload.';
+    } else if(code === 'rate_limited'){
+      S.pendingNote = savedNote;
+      ai.setText('Too many requests right now. Give it a minute and send that again.', 'err');
+    } else if(code === 'refused'){
+      S.pendingNote = savedNote;
+      ai.setText('I could not respond to that message as written. Tell me what you are feeling around it, in your own words.', 'err');
+    } else {
+      S.pendingNote = savedNote;
+      const partial = e && e.text && splitReply(e.text) ? splitReply(e.text).body.trim() : '';
+      ai.setText(partial ? partial + ' (interrupted)' : 'Something interrupted that reply. You can send it again.', partial ? undefined : 'err');
+    }
+  }finally{
+    S.ctl = null;
+    setSendMode(false);
+  }
+}
+
+/* ---------- composer ---------- */
+function autosize(){
+  input.style.height = 'auto';
+  input.style.height = Math.min(140, input.scrollHeight) + 'px';
+}
+input.addEventListener('input', autosize);
+input.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); $('form').requestSubmit(); }
+});
+$('form').addEventListener('submit', e => {
+  e.preventDefault();
+  if(S.busy){ if(S.ctl) S.ctl.abort(); return; }
+  send(input.value);
+});
+
+/* ---------- intimacy mode (18+) ---------- */
+const iBtn = $('intimacyBtn'), gate = $('ageGate');
+function setAdult(v){
+  S.adult = v;
+  iBtn.setAttribute('aria-pressed', v ? 'true' : 'false');
+  iBtn.textContent = v ? 'Intimacy mode · on' : 'Intimacy mode · 18+';
+  gate.hidden = true;
+  updateYT();
+}
+iBtn.addEventListener('click', () => {
+  if(S.adult){ setAdult(false); return; }
+  gate.hidden = !gate.hidden;
+});
+$('ageYes').addEventListener('click', () => setAdult(true));
+$('ageNo').addEventListener('click', () => { gate.hidden = true; });
+
+/* ---------- clear ---------- */
+$('clearBtn').addEventListener('click', () => {
+  if(S.ctl) S.ctl.abort();
+  S.turns = []; S.pendingNote = ''; S.musicOverride = null;
+  log.replaceChildren();
+  welcomeAgain();
+  setEmotions([]);
+});
+function welcomeAgain(){
+  const a = addAI('Cleared. Whenever you are ready, tell me what you feel.');
+  void a;
+}
+
+setEmotions([]);
+updateMusicUI();
+})();
+</script>
+</body>
+</html>
